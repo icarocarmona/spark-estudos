@@ -1,6 +1,14 @@
 # Spark-estudos
 Projeto tem como objetivo o aprendizado do mecanismo Spark.
 
+### Log
+O arquivo utilizado para o estudo foram os seguintes:
+
+- ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul95.gz
+- ftp://ita.ee.lbl.gov/traces/NASA_access_log_Aug95.gz
+
+Obs.: Baixo os arquivos antes de tudo pois são grandes
+
 ### Conf da aplicação
  - Adicione os arquivos de Log no seguinte caminho "C:\Temp" e descompacte o mesmo.
 
@@ -24,9 +32,5 @@ Projeto tem como objetivo o aprendizado do mecanismo Spark.
  - spark-core_2.12, versão 2.4.0 (Necessario para rodar o spark)
  - paranamer, versão 2.8 (necessário por causa da utilização do Java8 e se utilizar o metodo parallelize da class JavaSparkContext)
  
-### Log
-O arquivo utilizado para o estudo foram os seguintes:
 
-- ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul95.gz
-- ftp://ita.ee.lbl.gov/traces/NASA_access_log_Aug95.gz
 
