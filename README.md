@@ -28,5 +28,5 @@ Projeto tem como objetivo o aprendizado do mecanismo Spark.
 O arquivo utilizado para o estudo foram os seguintes:
 
 - ftp://ita.ee.lbl.gov/traces/NASA_access_log_Jul95.gz
-
+- ftp://ita.ee.lbl.gov/traces/NASA_access_log_Aug95.gz
 
