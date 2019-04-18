@@ -1,5 +1,5 @@
 package br.icarocarmona.spark.Interface;
 
 public interface IRunTask {
-	void Run();
+	void Run(String PathFile);
 }

@@ -7,35 +7,30 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
-
 import br.icarocarmona.spark.Interface.IRunTask;
 import scala.Tuple2;
 
 public class RunTask implements IRunTask {
 
-	private final static String ARQUIVO_JUL952 = "C:\\Temp\\access_log_Jul952";
-
-	// delimitador para quebrar a linha em partes
+	// delimitador para quebrar a linha em partes de acordo com o arquivo
 	private final static String delimiter = "-.-\\w|\\[|\\]|\"| ";
 
 	@Override
-	public void Run() {
-		// Configura��es principais
+	public void Run(String PathFile) {
+		// Configurações principais
 		SparkConf conf = new SparkConf().setAppName("ProcessaLogNASA").setMaster("local");
 		JavaSparkContext context = new JavaSparkContext(conf);
 		try {
 
 			// Carrega o arquivo de log local
-			JavaRDD<String> data = context.textFile(ARQUIVO_JUL952);
+			JavaRDD<String> data = context.textFile(PathFile);
 
-			
-			
-			// TotalErros(data);
-			// HostsUnicos(data);
-			// PrintTopCincoErros(data);
-			//PrintTotalBytes(data);
+			PrintTotalErros(data);
+			PrintHostsUnicos(data);
+			PrintTopCincoErros(data);
+			PrintTotalBytes(data);
 			PrintQuantidadeErrosDia(data);
+
 		} finally {
 			context.close();
 		}
@@ -43,10 +38,23 @@ public class RunTask implements IRunTask {
 	}
 
 	private void PrintQuantidadeErrosDia(JavaRDD<String> data) {
-		//data.flatMap(f -> )
+
+		//Filtra apenas os erros 404
+		JavaRDD<String> erros = FiltraErros(data);
+
+		//cria uma nova coleção com a data 
+		JavaPairRDD<String, Integer> filtered = erros
+				.mapToPair(m -> new Tuple2<String, Integer>(m.split(delimiter)[4].split(":")[0], 1));
+
+		//Agrupa as datas e soma
+		JavaPairRDD<String, Integer> errosPorDia = filtered.reduceByKey((x, y) -> x + y);
+
+		System.out.println("---- Quantidade de erros por dia ----");
+		errosPorDia.foreach((f) -> System.out.println(f));
 	}
 
 	private void PrintTotalBytes(JavaRDD<String> data) {
+		//cria uma coleção com apenas o valor de Bytes
 		JavaRDD<Integer> dataFiltered = data.flatMap(t -> {
 			try {
 				return Arrays.asList(Integer.parseInt(t.split(delimiter)[13])).iterator();
@@ -56,39 +64,53 @@ public class RunTask implements IRunTask {
 			}
 		});
 
-		int count = dataFiltered.reduce((a, b) -> a + b);
-		System.out.println("Total filtrado : " + count);
+		//Soma total de bytes
+		long count = dataFiltered.reduce((a, b) -> a + b);
+		System.out.println("-----  Total bytes : " + count);
+
 	}
 
 	private void PrintTopCincoErros(JavaRDD<String> data) {
 
-		JavaRDD<String> erros = data.filter(f -> f.contains("404"));
+		JavaRDD<String> erros = FiltraErros(data);
 
-		JavaPairRDD<String, Integer> agrupaLog = erros
+		//monta par com o host
+		JavaPairRDD<String, Integer> pair = erros
 				.mapToPair(m -> new Tuple2<String, Integer>(m.split(delimiter)[0], 1));
-		List<Tuple2<String, Integer>> numeroErros = agrupaLog.reduceByKey((x, y) -> x + y).sortByKey(true).take(5);
+		List<Tuple2<String, Integer>> group = pair.reduceByKey((x, y) -> x + y).sortByKey(true).take(5);
 
-		for (Tuple2<String, Integer> tuple2 : numeroErros) {
-			System.out.println(tuple2._1);
+		System.out.println("---- Os 5 URLs que mais causaram erro 404 ----");
+		
+		//Imprime os hosts com mais erros
+		for (Tuple2<String, Integer> host : group) {
+			System.out.println(host._1);
 		}
 
 	}
 
-	private static long TotalErros(JavaRDD<String> data) {
-		JavaRDD<String> totalErros = data.filter(f -> f.contains("404"));
-		System.out.println("Total de erros �: " + totalErros.count());
-		return totalErros.count();
+	//Filtra apenas os erros 404 dos dados
+	private static JavaRDD<String> FiltraErros(JavaRDD<String> data) {
+		return data.filter(f -> f.contains("404"));
 	}
 
-	private static long HostsUnicos(JavaRDD<String> data) {
-		JavaPairRDD<String, Integer> agrupaLog = data
+	private static void PrintTotalErros(JavaRDD<String> data) {
+		JavaRDD<String> totalErros = FiltraErros(data);
+		System.out.println("---- Total de erros 404 é: " + totalErros.count());
+	}
+
+	private static void PrintHostsUnicos(JavaRDD<String> data) {
+		
+		//cria um novo para com o Host 
+		JavaPairRDD<String, Integer> pair = data
 				.mapToPair(m -> new Tuple2<String, Integer>(m.split(delimiter)[0], 1));
-		JavaPairRDD<String, Integer> numeroHosts = agrupaLog.reduceByKey((x, y) -> x + y);
-		JavaPairRDD<String, Integer> filter = numeroHosts.filter(f -> f._2.equals(1));
+		
+		//Agrupa os dados
+		JavaPairRDD<String, Integer> group = pair.reduceByKey((x, y) -> x + y);
+		
+		//filtra apenas os hosts que tem unico acesso
+		JavaPairRDD<String, Integer> filter = group.filter(f -> f._2.equals(1));
 
-		System.out.println("Total de hosts unicos :" + filter.count());
-
-		return filter.count();
+		System.out.println("---- Total de hosts unicos :" + filter.count());
 	}
 
 }
